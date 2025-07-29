@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
-import io
-from datetime import datetime, timedelta
-import os
+import plotly.express as px
 import io
 from datetime import datetime, timedelta
 import os
@@ -145,7 +143,13 @@ if os.path.exists(project_path) and os.path.exists(team_path):
 
     with tab1:
         st.subheader("Projects Assigned per User")
-        st.dataframe(project_counts)
+        fig = px.bar(
+            project_counts,
+            x='Assignee', y='Number of Projects',
+            title='Number of Projects per User',
+            labels={'Number of Projects':'# Projects'}
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
         st.subheader("User Load & Availability")
         if USE_AGGRID:
