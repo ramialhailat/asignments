@@ -51,13 +51,11 @@ if team_file:
     with open(team_path, "wb") as f:
         f.write(team_file.getbuffer())
 
-@st.cache_data
 def load_project(file):
     df = pd.read_excel(file)
     df['Parent'] = df['Parent'].fillna("")
     return df
 
-@st.cache_data
 def load_team(file):
     return pd.read_excel(file)
 
