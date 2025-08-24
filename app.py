@@ -103,6 +103,25 @@ if os.path.exists(project_path) and os.path.exists(team_path):
     free_df = pd.DataFrame({'Assignee':free_users, 'Number of Projects':0})
     user_load = pd.concat([project_counts, free_df], ignore_index=True)
 
+    def get_free_date2(user):
+        # Filter tasks assigned to the user
+        tasks = df[(df['Assignee'] == user) & (df['Hierarchy'] != 'Epic')]
+        if tasks.empty:
+            return pd.to_datetime(datetime.today())
+        
+        dates = []
+        for _, row in tasks.iterrows():
+            due_date = row['Due date']
+            if pd.isnull(due_date) and 'Due date (roll-up)' in row:
+                due_date = row['Due date (roll-up)']
+            # Skip tasks with certain statuses
+            if 'Work item status' in row and row['Work item status'] in ['Blocked', 'In Analysis', 'Done']:
+                continue
+            if not pd.isnull(due_date):
+                dates.append(due_date)
+        
+        return pd.to_datetime(max(dates)) if dates else pd.to_datetime(datetime.today())
+
     # Compute free date
     def get_free_date(user):
         epics = df[df['Assignee']==user]['EpicTitle'].dropna().unique()
@@ -124,7 +143,14 @@ if os.path.exists(project_path) and os.path.exists(team_path):
 
         return pd.to_datetime(max(dates)) if dates else pd.to_datetime(datetime.today())
 
-    user_load['Free_Date'] = user_load['Assignee'].apply(get_free_date)
+    # Add a checkbox to switch between get_free_date and get_free_date2
+    use_task_based_dates = st.sidebar.checkbox("Use Task-Based Dates", value=True)
+
+    # Compute free dates based on the checkbox selection
+    if use_task_based_dates:
+        user_load['Free_Date'] = user_load['Assignee'].apply(get_free_date2)
+    else:
+        user_load['Free_Date'] = user_load['Assignee'].apply(get_free_date)
 
     # Build weekly availability with emojis, extended to end of year
     today = datetime.today()
