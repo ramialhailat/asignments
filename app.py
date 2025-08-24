@@ -143,8 +143,8 @@ if os.path.exists(project_path) and os.path.exists(team_path):
 
         return pd.to_datetime(max(dates)) if dates else pd.to_datetime(datetime.today())
 
-    # Add a checkbox to switch between get_free_date and get_free_date2
-    use_task_based_dates = st.sidebar.checkbox("Use Task-Based Dates", value=True)
+    # Update the checkbox to be disabled by default
+    use_task_based_dates = st.sidebar.checkbox("Task-Based Availability", value=False)
 
     # Compute free dates based on the checkbox selection
     if use_task_based_dates:
@@ -175,15 +175,6 @@ if os.path.exists(project_path) and os.path.exists(team_path):
     tab1, tab2 = st.tabs(["Dashboard", "Unassigned Users Mapping"])
 
     with tab1:
-        st.subheader("Projects Assigned per User")
-        fig = px.bar(
-            project_counts,
-            x='Assignee', y='Number of Projects',
-            title='Number of Projects per User',
-            labels={'Number of Projects':'# Projects'}
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
         st.subheader("User Load & Availability")
         if USE_AGGRID:
             # Prepare exportable DataFrame with 'Free'/'Busy' instead of emojis
@@ -199,7 +190,8 @@ if os.path.exists(project_path) and os.path.exists(team_path):
                 display_df,
                 gridOptions=grid_opts,
                 update_mode=GridUpdateMode.SELECTION_CHANGED,
-                fit_columns_on_grid_load=True
+                fit_columns_on_grid_load=True,
+                height=600  # Set a fixed height in pixels
             )
             selected_rows = grid_response.get('selected_rows', [])
             selected_user =None
@@ -264,6 +256,15 @@ if os.path.exists(project_path) and os.path.exists(team_path):
             st.markdown(f"**Estimated Free Date:** {free_date.date()}")
 
     with tab2:
+        st.subheader("Projects Assigned per User")
+        fig = px.bar(
+            project_counts,
+            x='Assignee', y='Number of Projects',
+            title='Number of Projects per User',
+            labels={'Number of Projects':'# Projects'}
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
         st.subheader("Unassigned Users Mapping")
         updated_free = []
         for name in free_users:
