@@ -106,13 +106,22 @@ if os.path.exists(project_path) and os.path.exists(team_path):
     # Compute free date
     def get_free_date(user):
         epics = df[df['Assignee']==user]['EpicTitle'].dropna().unique()
-        if len(epics)==0:
+        if len(epics) == 0:
             return pd.to_datetime(datetime.today())
         dates = []
         for e in epics:
             epic_row = df[(df['Hierarchy']=='Epic') & (df['Title']==e)]
             if not epic_row.empty:
-                dates.append(epic_row['Due date'].iloc[0])
+                due_date = epic_row['Due date'].iloc[0]
+                if pd.isnull(due_date) and 'Due date (roll-up)' in epic_row.columns:
+                    due_date = epic_row['Due date (roll-up)'].iloc[0]
+                if 'Work item status' in epic_row.columns:
+                    status = epic_row['Work item status'].iloc[0]
+                    if status in ['Blocked', 'In Analysis', 'Done']:
+                        continue
+                if not pd.isnull(due_date):
+                    dates.append(due_date)
+
         return pd.to_datetime(max(dates)) if dates else pd.to_datetime(datetime.today())
 
     user_load['Free_Date'] = user_load['Assignee'].apply(get_free_date)
@@ -158,6 +167,7 @@ if os.path.exists(project_path) and os.path.exists(team_path):
             display_df = user_load.drop(columns=['Free_Date'])
             gb = GridOptionsBuilder.from_dataframe(display_df)
             gb.configure_selection('single')
+            gb.configure_column("Assignee", minWidth=200, width=200, filter=True, filter_params={'buttons': ['reset', 'apply']})  # Make Assignee column wider and searchable
             grid_opts = gb.build()
             grid_response = AgGrid(
                 display_df,
